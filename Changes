@@ -1,5 +1,8 @@
 Revision history for Perl extension Syntax::Highlight::Universal.
 
+0.31  13 March 2005
+	* Changed file format to conform CPAN distribution rules
+
 0.3   12 March 2005
 	* Added possibility to precompile configuration files to achieve
 	  a speedup

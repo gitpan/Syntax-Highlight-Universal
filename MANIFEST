@@ -260,3 +260,4 @@ README
 test.pl
 Universal.pm
 Universal.xs
+META.yml                                 Module meta-data (added by MakeMaker)

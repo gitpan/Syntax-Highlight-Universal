@@ -4,7 +4,7 @@ use strict;
 use vars qw($VERSION @ISA);
 
 @ISA = qw(DynaLoader);
-$VERSION = '0.3';
+$VERSION = '0.31';
 
 my $load = 1;
 
