@@ -23,8 +23,8 @@ eval_ok('$highlighter->precompile("precompiled.hrcc")', 'precompile configuratio
 
 sub eval_ok
 {
-	my($code, $name) = @_;
-	eval($code);
-	print STDERR "\n" . $@ if $@;
-	$@ ? fail($name) : pass($name);
+  my($code, $name) = @_;
+  eval($code);
+  print STDERR "\n" . $@ if $@;
+  $@ ? fail($name) : pass($name);
 }

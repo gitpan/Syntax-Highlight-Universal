@@ -20,7 +20,6 @@ typedef unsigned int dword;
 #include<common/Features.h>
 
 #include<unicode/String.h>
-#include<common/MemoryChunks.h>
 
 #endif
 /* ***** BEGIN LICENSE BLOCK *****

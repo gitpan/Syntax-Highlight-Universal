@@ -228,11 +228,14 @@ private:
 class Node
 {
 public:
-  static const short COMMENT_NODE = 0;
-  static const short DOCUMENT_NODE = 1;
-  static const short ELEMENT_NODE = 2;
-  static const short PROCESSING_INSTRUCTION_NODE = 3;
-  static const short TEXT_NODE = 4;
+  enum
+  {
+    COMMENT_NODE = 0,
+    DOCUMENT_NODE = 1,
+    ELEMENT_NODE = 2,
+    PROCESSING_INSTRUCTION_NODE = 3,
+    TEXT_NODE = 4
+  };
 
   bool hasChildNodes()
   {

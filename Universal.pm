@@ -4,7 +4,7 @@ use strict;
 use vars qw($VERSION @ISA);
 
 @ISA = qw(DynaLoader);
-$VERSION = '0.35';
+$VERSION = '0.4';
 
 my $load = 1;
 
@@ -27,347 +27,347 @@ my $curCacheFile;
 
 sub initParsing
 {
-	my ($lines, $type) = @_;
+  my ($lines, $type) = @_;
 
-	if (defined $cacheDir)
-	{
-		my $text = join("\n", $type, @$lines);
+  if (defined $cacheDir)
+  {
+    my $text = join("\n", $type, @$lines);
 
-		require Digest::MD5;
-		$curCacheFile = Digest::MD5::md5_hex($text);
-		$curCacheDir = $cacheDir;
-		if ($cachePrefixLen > 0 && $cachePrefixLen < 32)
-		{
-			$curCacheDir .= '/' . substr($curCacheFile, 0, $cachePrefixLen);
-			substr($curCacheFile, 0, $cachePrefixLen) = '';
-		}
-		if (open(local *FILE, "$curCacheDir/$curCacheFile"))
-		{
-			binmode(FILE);
-			local $/;
-			return <FILE>;
-		}
-	}
-	else
-	{
-		undef $curCacheDir;
-		undef $curCacheFile;
-	}
+    require Digest::MD5;
+    $curCacheFile = Digest::MD5::md5_hex($text);
+    $curCacheDir = $cacheDir;
+    if ($cachePrefixLen > 0 && $cachePrefixLen < 32)
+    {
+      $curCacheDir .= '/' . substr($curCacheFile, 0, $cachePrefixLen);
+      substr($curCacheFile, 0, $cachePrefixLen) = '';
+    }
+    if (open(local *FILE, "$curCacheDir/$curCacheFile"))
+    {
+      binmode(FILE);
+      local $/;
+      return <FILE>;
+    }
+  }
+  else
+  {
+    undef $curCacheDir;
+    undef $curCacheFile;
+  }
 
-	$result = '';
-	$curRegions = [];
-	@schemeStack = ();
-	$curLineNum = 0;
-	return;
+  $result = '';
+  $curRegions = [];
+  @schemeStack = ();
+  $curLineNum = 0;
+  return;
 }
 
 sub addRegion
 {
-	my ($lines, $lineNum, $sx, $ex, $region) = @_;
+  my ($lines, $lineNum, $sx, $ex, $region) = @_;
 
-	return unless defined $region && $sx != $ex;
+  return unless defined $region && $sx != $ex;
 
-	_setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
+  _setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
 
-	my $class = _createClassName($region);
-	_insertRegion({
-		sx => $sx,
-		ex => $ex,
-		start => qq(<span class="$class">),
-		end => qq(</span>),
-	});
+  my $class = _createClassName($region);
+  _insertRegion({
+    sx => $sx,
+    ex => $ex,
+    start => qq(<span class="$class">),
+    end => qq(</span>),
+  });
 }
 
 sub enterScheme
 {
-	my ($lines, $lineNum, $sx, $ex, $scheme, $region) = @_;
+  my ($lines, $lineNum, $sx, $ex, $scheme, $region) = @_;
 
-	return unless defined $region;
+  return unless defined $region;
 
-	_setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
+  _setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
 
-	my $class = _createClassName($region);
-	my $regionDescr = {
-		sx => $sx,
-		ex => length($lines->[$lineNum]),
-		start => qq(<span class="$class">),
-		end => '',
-	};
+  my $class = _createClassName($region);
+  my $regionDescr = {
+    sx => $sx,
+    ex => length($lines->[$lineNum]),
+    start => qq(<span class="$class">),
+    end => '',
+  };
 
-	_insertRegion($regionDescr);
-	push @schemeStack, $regionDescr;
+  _insertRegion($regionDescr);
+  push @schemeStack, $regionDescr;
 }
 
 sub leaveScheme
 {
-	my ($lines, $lineNum, $sx, $ex, $scheme, $region) = @_;
+  my ($lines, $lineNum, $sx, $ex, $scheme, $region) = @_;
 
-	return unless defined $region;
+  return unless defined $region;
 
-	_setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
+  _setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
 
-	if ($#schemeStack >= 0 && defined $schemeStack[-1])
-	{
-		$schemeStack[-1]{ex} = $ex;
-		$schemeStack[-1]{end} = qq(</span>);
-	}
-	else
-	{
-		_insertRegion({
-			sx => 0,
-			ex => $ex,
-			start => '',
-			end => qq(</span>),
-		});
-	}
+  if ($#schemeStack >= 0 && defined $schemeStack[-1])
+  {
+    $schemeStack[-1]{ex} = $ex;
+    $schemeStack[-1]{end} = qq(</span>);
+  }
+  else
+  {
+    _insertRegion({
+      sx => 0,
+      ex => $ex,
+      start => '',
+      end => qq(</span>),
+    });
+  }
 
-	pop @schemeStack;
+  pop @schemeStack;
 }
 
 sub finalizeParsing
 {
-	my ($lines, $type) = @_;
+  my ($lines, $type) = @_;
 
-	_setCurLineNum($lines, $#$lines + 1);
-	$result .= '</span>' x ($#schemeStack + 1);
+  _setCurLineNum($lines, $#$lines + 1);
+  $result .= '</span>' x ($#schemeStack + 1);
 
-	if (defined $curCacheDir)
-	{
-		mkdir($curCacheDir, 0700) unless -d $curCacheDir;
-		if (open(local* FILE, ">$curCacheDir/$curCacheFile"))
-		{
-			binmode(FILE);
-			print FILE $result;
-		}
-	}
+  if (defined $curCacheDir)
+  {
+    mkdir($curCacheDir, 0700) unless -d $curCacheDir;
+    if (open(local* FILE, ">$curCacheDir/$curCacheFile"))
+    {
+      binmode(FILE);
+      print FILE $result;
+    }
+  }
 
-	return $result;
+  return $result;
 }
 
 sub _createClassName
 {
-	my $region = shift;
+  my $region = shift;
 
-	my $class = $region->name;
-	for ($region = $region->parent; defined $region; $region = $region->parent)
-	{
-		$class .= ' ' . $region->name;
-	}
-	$class =~ s/[^\w ]/_/g;
-	return $class;
+  my $class = $region->name;
+  for ($region = $region->parent; defined $region; $region = $region->parent)
+  {
+    $class .= ' ' . $region->name;
+  }
+  $class =~ s/[^\w ]/_/g;
+  return $class;
 }
 
 sub _setCurLineNum
 {
-	my($lines, $lineNum) = @_;
+  my($lines, $lineNum) = @_;
 
-	for (; $curLineNum < $lineNum; $curLineNum++)
-	{
-		$curLine = $lines->[$curLineNum];
-		_finalizeLine();
-		$result .= "\n";
-		$curRegions = [];
-		undef $_ foreach @schemeStack;
-	}
+  for (; $curLineNum < $lineNum; $curLineNum++)
+  {
+    $curLine = $lines->[$curLineNum];
+    _finalizeLine();
+    $result .= "\n";
+    $curRegions = [];
+    undef $_ foreach @schemeStack;
+  }
 }
 
 sub _insertRegion
 {
-	my($region) = @_;
-	$region->{children} = [];
+  my($region) = @_;
+  $region->{children} = [];
 
-	my $list = $curRegions;
-	my $found = 0;
-	for (my $i = 0; $i <= $#$list; $i++)
-	{
-		my $cmp = $list->[$i];
+  my $list = $curRegions;
+  my $found = 0;
+  for (my $i = 0; $i <= $#$list; $i++)
+  {
+    my $cmp = $list->[$i];
 
-		if ($cmp->{sx} >= $region->{ex})
-		{
-			splice(@$list, $i, 0, $region);
-			$found = 1;
-			last;
-		}
-		elsif ($cmp->{sx} <= $region->{sx} && $cmp->{ex} >= $region->{ex})
-		{
-			$list = $cmp->{children};
-			$i = -1;
-		}
-		elsif ($cmp->{sx} >= $region->{sx} && $cmp->{ex} <= $region->{ex})
-		{
-			my $j = 1;
-			$j++ while $i+$j <= $#$list && $list->[$i+$j]{sx} >= $region->{sx} && $list->[$i+$j]{ex} <= $region->{ex};
-			push @{$region->{children}}, splice(@$list, $i, $j, $region);
-			$found = 1;
-			last;
-		}
-		elsif (($cmp->{sx} < $region->{sx} && $cmp->{ex} > $region->{sx}) || ($cmp->{sx} < $region->{ex} && $cmp->{ex} > $region->{ex}))
-		{
-			# We don't allow intersecting regions yet
-			return;
-		}
-	}
-	push @$list, $region unless $found;
+    if ($cmp->{sx} >= $region->{ex})
+    {
+      splice(@$list, $i, 0, $region);
+      $found = 1;
+      last;
+    }
+    elsif ($cmp->{sx} <= $region->{sx} && $cmp->{ex} >= $region->{ex})
+    {
+      $list = $cmp->{children};
+      $i = -1;
+    }
+    elsif ($cmp->{sx} >= $region->{sx} && $cmp->{ex} <= $region->{ex})
+    {
+      my $j = 1;
+      $j++ while $i+$j <= $#$list && $list->[$i+$j]{sx} >= $region->{sx} && $list->[$i+$j]{ex} <= $region->{ex};
+      push @{$region->{children}}, splice(@$list, $i, $j, $region);
+      $found = 1;
+      last;
+    }
+    elsif (($cmp->{sx} < $region->{sx} && $cmp->{ex} > $region->{sx}) || ($cmp->{sx} < $region->{ex} && $cmp->{ex} > $region->{ex}))
+    {
+      # We don't allow intersecting regions yet
+      return;
+    }
+  }
+  push @$list, $region unless $found;
 }
 
 sub _finalizeLine
 {
-	my($pos, $ex, $list) = @_;
-	$pos = 0 unless defined $pos;
-	$ex = length($curLine) unless defined $ex;
-	$list = $curRegions unless defined $list;
+  my($pos, $ex, $list) = @_;
+  $pos = 0 unless defined $pos;
+  $ex = length($curLine) unless defined $ex;
+  $list = $curRegions unless defined $list;
 
-	foreach my $region (@$list)
-	{
-		$result .= _toHTML(substr($curLine, $pos, $region->{sx} - $pos)) if $region->{sx} > $pos;
-		$result .= $region->{start};
-		_finalizeLine($region->{sx}, $region->{ex}, $region->{children}) if $region->{sx} < $region->{ex};
-		$result .= $region->{end};
-		$pos = $region->{ex};
-	}
-	$result .= _toHTML(substr($curLine, $pos, $ex - $pos)) if $ex > $pos;
+  foreach my $region (@$list)
+  {
+    $result .= _toHTML(substr($curLine, $pos, $region->{sx} - $pos)) if $region->{sx} > $pos;
+    $result .= $region->{start};
+    _finalizeLine($region->{sx}, $region->{ex}, $region->{children}) if $region->{sx} < $region->{ex};
+    $result .= $region->{end};
+    $pos = $region->{ex};
+  }
+  $result .= _toHTML(substr($curLine, $pos, $ex - $pos)) if $ex > $pos;
 }
 
 sub _toHTML
 {
-	my $text = shift;
+  my $text = shift;
 
-	my %translate = ('&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;');
-	$text =~ s/([&<>\"])/$translate{$1}/g;
-	return $text;
+  my %translate = ('&' => '&amp;', '<' => '&lt;', '>' => '&gt;', '"' => '&quot;');
+  $text =~ s/([&<>\"])/$translate{$1}/g;
+  return $text;
 }
 
 sub new
 {
-	my $class = shift;
+  my $class = shift;
 
-	return bless({}, $class);
+  return bless({}, $class);
 }
 
 sub setPrecompiledConfig
 {
-	shift;
-	my $file = shift;
-	$file = 'precompiled.hrcc' unless defined $file;
+  shift;
+  my $file = shift;
+  $file = 'precompiled.hrcc' unless defined $file;
 
-	die "Can't load precompiled config file after a plain config file has been loaded" if $type == 2;
-	die "Can't load more than one precompiled config file" if $type == 1;
+  die "Can't load precompiled config file after a plain config file has been loaded" if $type == 2;
+  die "Can't load more than one precompiled config file" if $type == 1;
 
-	$defaultConfig = 0;
-	$type = 1;
+  $defaultConfig = 0;
+  $type = 1;
 
-	my @dirs = ('');
-	push @dirs, map {"$_/Syntax/Highlight/Universal/"} @INC;
+  my @dirs = ('');
+  push @dirs, map {"$_/Syntax/Highlight/Universal/"} @INC;
 
-	my $found = 0;
-	foreach my $dir (@dirs)
-	{
-		if (-f "$dir$file")
-		{
-			$precompiledConfig = "$dir$file";
-			$found = 1;
-			last;
-		}
-	}
-	die "Could not find config file $file" unless $found;
+  my $found = 0;
+  foreach my $dir (@dirs)
+  {
+    if (-f "$dir$file")
+    {
+      $precompiledConfig = "$dir$file";
+      $found = 1;
+      last;
+    }
+  }
+  die "Could not find config file $file" unless $found;
 }
 
 sub addConfig
 {
-	shift;
-	die "Can't load plain config files after a precompiled config file has been loaded" if $type == 1;
+  shift;
+  die "Can't load plain config files after a precompiled config file has been loaded" if $type == 1;
 
-	$defaultConfig = 0;
-	$type = 2;
+  $defaultConfig = 0;
+  $type = 2;
 
-	my @dirs = ('');
-	push @dirs, map {"$_/Syntax/Highlight/Universal/"} @INC;
+  my @dirs = ('');
+  push @dirs, map {"$_/Syntax/Highlight/Universal/"} @INC;
 
-	foreach my $file (@_)
-	{
-		my $found = 0;
-		foreach my $dir (@dirs)
-		{
-			if (-f "$dir$file")
-			{
-				push @configQueue, "$dir$file";
-				$found = 1;
-				last;
-			}
-		}
-		die "Could not find config file $file" unless $found;
-	}
+  foreach my $file (@_)
+  {
+    my $found = 0;
+    foreach my $dir (@dirs)
+    {
+      if (-f "$dir$file")
+      {
+        push @configQueue, "$dir$file";
+        $found = 1;
+        last;
+      }
+    }
+    die "Could not find config file $file" unless $found;
+  }
 }
 
 sub setCacheDir
 {
-	shift;
-	$cacheDir = shift;
+  shift;
+  $cacheDir = shift;
 }
 
 sub setCachePrefixLen
 {
-	shift;
-	$cachePrefixLen = int(shift);
+  shift;
+  $cachePrefixLen = int(shift);
 }
 
 sub _init
 {
-	if ($load)
-	{
-		require DynaLoader;
-		__PACKAGE__->bootstrap;
-		$load = 0;
-	}
+  if ($load)
+  {
+    require DynaLoader;
+    __PACKAGE__->bootstrap;
+    $load = 0;
+  }
 
-	addConfig('hrc/proto.hrc') if $defaultConfig;
-	if (defined $precompiledConfig)
-	{
-		_deserialize($precompiledConfig);
-		undef $precompiledConfig;
-	}
-	else
-	{
-		_addConfig($_) foreach @configQueue;
-		@configQueue = ();
-	}
+  addConfig(undef, 'hrc/proto.hrc') if $defaultConfig;
+  if (defined $precompiledConfig)
+  {
+    _deserialize($precompiledConfig);
+    undef $precompiledConfig;
+  }
+  else
+  {
+    _addConfig($_) foreach @configQueue;
+    @configQueue = ();
+  }
 }
 
 sub highlight
 {
-	shift;
-	my ($type, $text, $callbacks) = @_;
+  shift;
+  my ($type, $text, $callbacks) = @_;
 
-	unless (defined($callbacks) && UNIVERSAL::isa($callbacks, 'HASH'))
-	{
-		$callbacks = {
-			initParsing => \&initParsing,
-			addRegion => \&addRegion,
-			enterScheme => \&enterScheme,
-			leaveScheme => \&leaveScheme,
-			finalizeParsing => \&finalizeParsing,
-		};
-	}
-	$text = [split(/\r?\n/, $text)] unless UNIVERSAL::isa($text, 'ARRAY');
+  unless (defined($callbacks) && UNIVERSAL::isa($callbacks, 'HASH'))
+  {
+    $callbacks = {
+      initParsing => \&initParsing,
+      addRegion => \&addRegion,
+      enterScheme => \&enterScheme,
+      leaveScheme => \&leaveScheme,
+      finalizeParsing => \&finalizeParsing,
+    };
+  }
+  $text = [split(/\r?\n/, $text)] unless UNIVERSAL::isa($text, 'ARRAY');
 
-	my $result;
-	$result = $callbacks->{initParsing}->($text, $type) if exists($callbacks->{initParsing});
-	return $result if defined $result;
+  my $result;
+  $result = $callbacks->{initParsing}->($text, $type) if exists($callbacks->{initParsing});
+  return $result if defined $result;
 
-	_init;
-	_highlight($type, $text, $callbacks);
+  _init;
+  _highlight($type, $text, $callbacks);
 
-	$result = $callbacks->{finalizeParsing}->($text, $type) if exists($callbacks->{finalizeParsing});
-	return $result;
+  $result = $callbacks->{finalizeParsing}->($text, $type) if exists($callbacks->{finalizeParsing});
+  return $result;
 }
 
 sub precompile
 {
-	shift;
-	my $file = shift;
+  shift;
+  my $file = shift;
 
-	_init;
-	_serialize($file);
+  _init;
+  _serialize($file);
 }
 
 1;
@@ -379,26 +379,26 @@ Syntax::Highlight::Universal - Syntax highlighting module based on the Colorer l
 
 =head1 SYNOPSIS
 
-	use Syntax::Highlight::Universal;
-	my $highlighter = Syntax::Highlight::Universal->new;
+  use Syntax::Highlight::Universal;
+  my $highlighter = Syntax::Highlight::Universal->new;
 
-	$highlighter->addConfig("hrc/proto.hrc");
-	$highlighter->setPrecompiledConfig("precompiled.hrcc");
-	$highlighter->setCacheDir("/tmp/highlighter");
-	$highlighter->setCachePrefixLen(2);
+  $highlighter->addConfig("hrc/proto.hrc");
+  $highlighter->setPrecompiledConfig("precompiled.hrcc");
+  $highlighter->setCacheDir("/tmp/highlighter");
+  $highlighter->setCachePrefixLen(2);
 
-	my $result = $highlighter->highlight("perl", "print 'Hello, World!'");
+  my $result = $highlighter->highlight("perl", "print 'Hello, World!'");
 
-	my $callbacks = {
-		initParsing => \&myInitHandler,
-		addRegion => \&myRegionHandler,
-		enterScheme => \&mySchemeStartHandler,
-		leaveScheme => \&mySchemeEndHandler,
-		finalizeParsing => \&myFinalizeHandler,
-	};
-	$highlighter->highlight("perl", "print 'Hello, World!'", $callbacks);
+  my $callbacks = {
+    initParsing => \&myInitHandler,
+    addRegion => \&myRegionHandler,
+    enterScheme => \&mySchemeStartHandler,
+    leaveScheme => \&mySchemeEndHandler,
+    finalizeParsing => \&myFinalizeHandler,
+  };
+  $highlighter->highlight("perl", "print 'Hello, World!'", $callbacks);
 
-	$highlighter->precompile("precompiled.hrcc");
+  $highlighter->precompile("precompiled.hrcc");
 
 =head1 ABSTRACT
 
@@ -418,7 +418,7 @@ two.
 
 =head2 Creating a new object
 
-	my $highlighter = Syntax::Highlight::Universal->new;
+  my $highlighter = Syntax::Highlight::Universal->new;
 
 This will create a new object and bind it to the
 C<Syntax::Highlight::Universal> namespace. It can be used to call the methods
@@ -428,7 +428,7 @@ effect.
 
 =head2 Processing text
 
-	my $result = $highlighter->highlight(FORMAT, TEXT, [CALLBACKS]);
+  my $result = $highlighter->highlight(FORMAT, TEXT, [CALLBACKS]);
 
 This will process the text and produce its syntax highlighted variant, by
 default in (X)HTML format.
@@ -440,20 +440,20 @@ default in (X)HTML format.
 This must be one of the formats defined in the configuration file. Usually
 it will be one of the following:
 
-	c, cpp, asm, perl, java, idl, pascal, csharp, jsnet,
-	vbnet, forth, fortran, vbasic, html, css, html-css,
-	svg-css, jsp, php, php-body, xhtml-trans, xhtml-strict,
-	xhtml-frameset, asp.vb, asp.js, asp.ps, svg, coldfusion,
-	jScript, actionscript, vbScript, xml, dtd, xslt,
-	xmlschema, relaxng, xlink, clarion, Clipper, foxpro,
-	sqlj, paradox, sql, mysql, Batch, shell, apache, config,
-	hrc, hrd, delphiform, javacc, javaProperties, lex, yacc,
-	makefile, regedit, resources, TeX, dcl, vrml, rarscript,
-	nsi, iss, isScripts, c1c, ada, abap4, AutoIt, awk, dssp,
-	adsp, Baan, cobol, cache, eiffel, icon, lisp, matlab,
-	modula2, picasm, python, rexx, ruby, sml, ocaml, tcltk,
-	sicstusProlog, turboProlog, verilog, vhdl, z80, asm80,
-	filesbbs, diff, messages, text, default
+  c, cpp, asm, perl, java, idl, pascal, csharp, jsnet,
+  vbnet, forth, fortran, vbasic, html, css, html-css,
+  svg-css, jsp, php, php-body, xhtml-trans, xhtml-strict,
+  xhtml-frameset, asp.vb, asp.js, asp.ps, svg, coldfusion,
+  jScript, actionscript, vbScript, xml, dtd, xslt,
+  xmlschema, relaxng, xlink, clarion, Clipper, foxpro,
+  sqlj, paradox, sql, mysql, Batch, shell, apache, config,
+  hrc, hrd, delphiform, javacc, javaProperties, lex, yacc,
+  makefile, regedit, resources, TeX, dcl, vrml, rarscript,
+  nsi, iss, isScripts, c1c, ada, abap4, AutoIt, awk, dssp,
+  adsp, Baan, cobol, cache, eiffel, icon, lisp, matlab,
+  modula2, picasm, python, rexx, ruby, sml, ocaml, tcltk,
+  sicstusProlog, turboProlog, verilog, vhdl, z80, asm80,
+  filesbbs, diff, messages, text, default
 
 =item TEXT
 
@@ -466,13 +466,13 @@ Optional parameter, a hash reference defining the functions to
 be called during parsing of the text (all hash entries are optional).
 If this parameter is omitted it will be set to:
 
-	{
-		initParsing => \&Syntax::Highlight::Universal::initParsing,
-		addRegion => \&Syntax::Highlight::Universal::addRegion,
-		enterScheme => \&Syntax::Highlight::Universal::enterScheme,
-		leaveScheme => \&Syntax::Highlight::Universal::leaveScheme,
-		finalizeParsing => \&Syntax::Highlight::Universal::finalizeParsing,
-	}
+  {
+    initParsing => \&Syntax::Highlight::Universal::initParsing,
+    addRegion => \&Syntax::Highlight::Universal::addRegion,
+    enterScheme => \&Syntax::Highlight::Universal::enterScheme,
+    leaveScheme => \&Syntax::Highlight::Universal::leaveScheme,
+    finalizeParsing => \&Syntax::Highlight::Universal::finalizeParsing,
+  }
 
 The callbacks are explained in detail L<below|/Callbacks>.
 
@@ -481,7 +481,11 @@ The callbacks are explained in detail L<below|/Callbacks>.
 If the callbacks parameter is omitted, the return value is the syntax
 highlighted version of the text in (X)HTML. The regions are translated into
 C<E<lt>spanE<gt>> elements, the class attribute is set to the region's name.
-The resulting code can be formatted via CSS.
+The resulting code can be formatted via CSS. Directory C<css> of the
+distribution contains some sample CSS files created from Colorer's HRD files
+with the hrd2css script (also in this directory). You have to keep in
+mind that some of these color schemes are meant for a specific background
+color.
 
 If the default callback functions are overridden, either the return value
 of the C<initParsing> or C<finalizeParsing> callback will be returned,
@@ -491,7 +495,7 @@ depending on whether C<initParsing> returns a value.
 
 =head2 Importing configuration files
 
-	$highlighter->addConfig(FILE, ...);
+  $highlighter->addConfig(FILE, ...);
 
 This method imports a list of configuration files. They replace
 C<hrc/proto.hrc> that is used by default.
@@ -509,7 +513,7 @@ of the file, see HRC reference (http://colorer.sf.net/hrc-ref/).
 
 =head2 Precompiling configuration files
 
-	$highlighter->precompile(FILE);
+  $highlighter->precompile(FILE);
 
 Parsing HRC files takes a while, resulting in a high time demand for processing
 of the first text. In order to speed it up, configuration files can be
@@ -537,7 +541,7 @@ Name of the file to be written
 
 =head2 Loading a precompiled configuration
 
-	$highlighter->setPrecompiledConfig([FILE]);
+  $highlighter->setPrecompiledConfig([FILE]);
 
 This method will load a precompiled configuration file. It can
 only be called once, combining several files isn't yet supported.
@@ -557,7 +561,7 @@ be loaded then.
 
 =head2 Setting a cache directory
 
-	$highlighter->setCacheDir(DIR);
+  $highlighter->setCacheDir(DIR);
 
 This method will enable caching of the results and define a cache
 directory. Then, a text will only go through the complete processing
@@ -583,7 +587,7 @@ L<setCachePrefixLen|/Setting cache prefix length>).
 =head2 Setting cache prefix length
 
 
-	$highlighter->setCachePrefixLen(LENGTH);
+  $highlighter->setCachePrefixLen(LENGTH);
 
 This method defines how many characters should be used for subdirectories
 of the cache directory.
@@ -718,7 +722,7 @@ for an interpolated string constant in Perl.
 
 =head1 PROBLEMS
 
-=head2 HTML output is too verbous
+=head2 HTML output is too verbose
 
 The default output will use the name of a region and of all its parents as
 the class name for a block of text. This allows adding styles only for
@@ -732,17 +736,17 @@ in compressed output is negligible.
 I<Solution 2>: You can replace the function used for creating class names to
 include only one region name of the C<def:*> scheme.
 
-	*Syntax::Highlight::Universal::_createClassName = sub {
-		$region = shift;
+  *Syntax::Highlight::Universal::_createClassName = sub {
+    $region = shift;
 
-		while (defined $region && $region->name !~ /^def:/)
-		{
-			$region = $region->parent;
-		}
-		my $class = defined $region ? $region->name : 'unknown';
-		$class =~ s/\W/_/g;
-		return $class;
-	};
+    while (defined $region && $region->name !~ /^def:/)
+    {
+      $region = $region->parent;
+    }
+    my $class = defined $region ? $region->name : 'unknown';
+    $class =~ s/\W/_/g;
+    return $class;
+  };
 
 Note: this approach is not recommended and might stop working in future
 versions of the module.
@@ -770,6 +774,59 @@ information on this feature. When installing the module C<make test> will
 automatically create a precompiled configuration file C<precompiled.hrcc>
 (about 2 MB) that can be copied into the module's library directory (that's
 where the C<hrc> directory is put when installing the module).
+
+=head1 INCLUDED COLORER FILES
+
+The source files belonging to the Colorer library are in the C<colorer>
+directory of the distribution. It is a subset of files from Colorer-take5
+Library beta3. All files are unchanged with the following exceptions:
+
+=over 4
+
+=item common/Features.h
+
+The constants C<USE_CHUNK_ALLOC>, C<USE_DL_MALLOC>, C<JAR_INPUT_SOURCE>,
+C<HTTP_INPUT_SOURCE> have been removed (the corresponding files haven't
+been included). Instead, a constant C<ALLOW_SERIALIZATION> is defined.
+
+=item common/Common.h
+
+This file doesn't include C<MemoryChunks.h> any more.
+
+=item colorer/parsers/HRCParserImpl.cpp
+
+Some blocks have been added that become active if C<ALLOW_SERIALIZATION>
+is defined. They are used to store additional information in the objects
+of class C<SchemeNode> so that they can be written to disk and restored
+without being changed.
+
+=item colorer/parsers/helpers/HRCParserHelper.(h|cpp)
+
+If C<ALLOW_SERIALIZATION> is defined, some fields are added to the class
+C<SchemeNode>.
+
+=item colorer/parsers/HRCParserImpl.cpp
+
+Method C<loadFileType()> has been made virtual to allow overloading.
+
+=item xml/xmldom.h
+
+Made the definition of constants in class C<Node> an C<enum> (MS Visual C++
+6.0 has problems with the current definition).
+
+=back
+
+If you plan to use this module with another Colorer version you should
+consider repeating these changes.
+
+Furthermore the HRC files from the colorer library are included, these are
+in the directory C<Syntax/Highlight/Universal>. Here only the file
+C<hrc/inet/php-body.hrc> has been added and C<hrc/proto.hrc> changed
+appropriately. This format is meant for highlighting pure PHP code that
+isn't embedded in HTML.
+
+Directory C<css> contains color schemes that have been translated from
+Colorer's HRD files with the hrd2css script.
 
 =head1 SEE ALSO
 

@@ -29,8 +29,6 @@ colorer/common/io/FileInputSource.cpp
 colorer/common/io/FileInputSource.h
 colorer/common/io/InputSource.cpp
 colorer/common/io/InputSource.h
-colorer/common/MemoryChunks.cpp
-colorer/common/MemoryChunks.h
 colorer/common/MemoryOperator.h
 colorer/common/Vector.h
 colorer/cregexp/cregexp.cpp
@@ -61,6 +59,16 @@ colorer/unicode/x_encodings.h
 colorer/unicode/x_tables.h
 colorer/xml/xmldom.cpp
 colorer/xml/xmldom.h
+css/black.css
+css/contrib/bred3.css
+css/contrib/fmx.css
+css/eclipse.css
+css/grayscale.css
+css/hrd2css.pl
+css/hs.css
+css/navy.css
+css/neo.css
+css/white.css
 lib/Syntax/Highlight/Universal/hrc/auto/ccsql.hrc
 lib/Syntax/Highlight/Universal/hrc/auto/farmanager.hrc
 lib/Syntax/Highlight/Universal/hrc/auto/gen.hrc

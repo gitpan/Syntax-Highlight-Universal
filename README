@@ -1,5 +1,5 @@
-Syntax-Highlight-Universal version 0.35
-=======================================
+Syntax-Highlight-Universal version 0.4
+======================================
 
 This module can process text of any format and produce a syntax
 highlighted version of it. The default output format is (X)HTML,
@@ -12,24 +12,23 @@ REQUIREMENTS
 
 * Perl 5.6 or higher
 
-	This module might work with older Perl versions
- 	as well, but it has only been tested with Perl 5.6 and 5.8.
+  This module might work with older Perl versions
+  as well, but it has only been tested with Perl 5.6 and 5.8.
 
-* gcc compiler
+* gcc or MS Visual C++ 6.0 compiler
 
-	There is a number of reasons why this module might
- 	fail to compile with other compilers. It definitely doesn't
-	compile with Microsoft Visual C++ 6.0, this problem might be
-	solved in future.
+  This module hasn't been tested with other compilers and there
+  is a number of reasons why this module might fail to compile.
+  But you can always try...
 
 INSTALLATION
 
 To install this module type the following:
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+  perl Makefile.PL
+  make
+  make test
+  make install
 
 COPYRIGHT AND LICENCE
 

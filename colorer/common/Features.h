@@ -2,20 +2,10 @@
 #define _COLORER_FEATURES_H_
 
 /**
-  If defined, use Perl's memory management
-*/
-#define USE_PERL_MALLOC TRUE
-
-/**
   If defined, additional data is stored in the data structures to allow serialization
 */
 
 #define ALLOW_SERIALIZATION TRUE
-
-/**
-  If defined, long-living classes use chunk allocation procedure
-*/
-#define USE_CHUNK_ALLOC TRUE
 
 #endif
 /* ***** BEGIN LICENSE BLOCK *****
