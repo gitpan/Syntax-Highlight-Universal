@@ -4,7 +4,7 @@ use strict;
 use vars qw($VERSION @ISA);
 
 @ISA = qw(DynaLoader);
-$VERSION = '0.31';
+$VERSION = '0.35';
 
 my $load = 1;
 
@@ -63,15 +63,13 @@ sub initParsing
 
 sub addRegion
 {
-	my ($lines, $lineNum, $sx, $ex, $regions) = @_;
+	my ($lines, $lineNum, $sx, $ex, $region) = @_;
 
-	return if $sx == $ex || $#$regions < 0;
+	return unless defined $region && $sx != $ex;
 
 	_setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
 
-	my $class = join(' ', @$regions);
-	$class =~ s/:/_/g;
-
+	my $class = _createClassName($region);
 	_insertRegion({
 		sx => $sx,
 		ex => $ex,
@@ -82,31 +80,29 @@ sub addRegion
 
 sub enterScheme
 {
-	my ($lines, $lineNum, $sx, $ex, $scheme, $regions) = @_;
+	my ($lines, $lineNum, $sx, $ex, $scheme, $region) = @_;
 
-	return if $#$regions < 0;
-	
+	return unless defined $region;
+
 	_setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
 
-	my $class = join(' ', @$regions);
-	$class =~ s/:/_/g;
-
-	my $region = {
+	my $class = _createClassName($region);
+	my $regionDescr = {
 		sx => $sx,
 		ex => length($lines->[$lineNum]),
 		start => qq(<span class="$class">),
 		end => '',
 	};
 
-	_insertRegion($region);
-	push @schemeStack, $region;
+	_insertRegion($regionDescr);
+	push @schemeStack, $regionDescr;
 }
 
 sub leaveScheme
 {
-	my ($lines, $lineNum, $sx, $ex, $scheme, $regions) = @_;
+	my ($lines, $lineNum, $sx, $ex, $scheme, $region) = @_;
 
-	return if $#$regions < 0;
+	return unless defined $region;
 
 	_setCurLineNum($lines, $lineNum) unless $lineNum == $curLineNum;
 
@@ -146,6 +142,19 @@ sub finalizeParsing
 	}
 
 	return $result;
+}
+
+sub _createClassName
+{
+	my $region = shift;
+
+	my $class = $region->name;
+	for ($region = $region->parent; defined $region; $region = $region->parent)
+	{
+		$class .= ' ' . $region->name;
+	}
+	$class =~ s/[^\w ]/_/g;
+	return $class;
 }
 
 sub _setCurLineNum
@@ -378,7 +387,7 @@ Syntax::Highlight::Universal - Syntax highlighting module based on the Colorer l
 	$highlighter->setCacheDir("/tmp/highlighter");
 	$highlighter->setCachePrefixLen(2);
 
-	my $result = $highlighter->highlight("perl", "printf 'Hello, World!'");
+	my $result = $highlighter->highlight("perl", "print 'Hello, World!'");
 
 	my $callbacks = {
 		initParsing => \&myInitHandler,
@@ -387,7 +396,7 @@ Syntax::Highlight::Universal - Syntax highlighting module based on the Colorer l
 		leaveScheme => \&mySchemeEndHandler,
 		finalizeParsing => \&myFinalizeHandler,
 	};
-	$highlighter->highlight("perl", "printf 'Hello, World!'", $callbacks);
+	$highlighter->highlight("perl", "print 'Hello, World!'", $callbacks);
 
 	$highlighter->precompile("precompiled.hrcc");
 
@@ -396,7 +405,8 @@ Syntax::Highlight::Universal - Syntax highlighting module based on the Colorer l
 This module can process text of any format and produce a syntax
 highlighted version of it. The default output format is (X)HTML,
 custom formats are also possible. It uses parts of the Colorer library
-and supports its HRC configuration files. Configuration files for about
+(http://colorer.sf.net/) and supports its HRC configuration files
+(http://colorer.sf.net/hrc-ref/). Configuration files for about
 100 file formats are included.
 
 =head1 DESCRIPTION
@@ -615,7 +625,7 @@ The text format, same as the parameter to L<highlight|/Processing text>
 
 =back
 
-=head3 addRegion(LINES, LINENO, START, END, REGIONS)
+=head3 addRegion(LINES, LINENO, START, END, REGION)
 
 Called whenever a new region inside a line is identified.
 
@@ -635,17 +645,15 @@ The position of region start within the line
 The position of region end (the first character not belonging to the region)
 within the line
 
-=item REGIONS
+=item REGION
 
-Reference to a list of region names. First in the list is the name of the
-actual region found, the names of its parent regions (more generally defined
-regions whose meaning includes the currently found) are following.
+A Colorer region object. Information on its methods is given L<below|/Regions>.
 
 =back
 
-=head3 enterScheme(LINES, LINENO, START, END, SCHEME, REGIONS)
+=head3 enterScheme(LINES, LINENO, START, END, SCHEME, REGION)
 
-=head3 leaveScheme(LINES, LINENO, START, END, SCHEME, REGIONS)
+=head3 leaveScheme(LINES, LINENO, START, END, SCHEME, REGION)
 
 Called whenever the start/end of a scheme is found. The parameters
 are all the same as for C<addRegion>, except:
@@ -654,11 +662,114 @@ are all the same as for C<addRegion>, except:
 
 =item SCHEME
 
-Name of the scheme found
+A Colorer scheme object. Information on its methods is given L<below|/Schemes>.
 
 =back
 
+=head2 Regions
+
+Colorer defines a large set of regions that are organized hierarchically. Each
+region represents text elements of a certain type. The region object has the
+following methods:
+
+=over 4
+
+=item $region->name
+
+Returns the name of the region. This is something like E<quot>regexp:SymbolE<quot>.
+
+=item $region->description
+
+Returns the description of a region or an undefined value if this region
+has no description. For the region mentioned above this would be
+E<quot>ESC-Symbols: \(,\n,\r,etcE<quot>.
+
+=item $region->parent
+
+Returns the region that is above the current in the hierarchy or an
+undefined value for a top-level region. Usually this will be a region
+that is defined more generally and whose meaning includes the current
+region. For the region mentioned above the parent will be a region with
+the name E<quot>def:StringContentE<quot>.
+
+=item $region->id
+
+Returns a unique numerical id for the region.
+
 =back
+
+=head2 Schemes
+
+Schemes in Colorer describe general context changes. For example, the scheme
+will change when parsing an interpolated string constant. The current
+scheme defines the regions that can be found, e.g. you can't have function
+calls inside a string scheme. Schemes unlike regions can stretch over multiple
+lines. The current Colorer version defines only one method for the scheme
+object:
+
+=over 4
+
+=item $scheme->name
+
+Returns the name of the scheme, e.g. E<quot>perl:InterpolateStringE<quot>
+for an interpolated string constant in Perl.
+
+=back
+
+=head1 PROBLEMS
+
+=head2 HTML output is too verbous
+
+The default output will use the name of a region and of all its parents as
+the class name for a block of text. This allows adding styles only for
+generally defined regions in most cases while still being able to take
+language-specific features into account. However, this increases the amount
+of text largely.
+
+I<Solution 1>: Use server-side compression, e.g. mod_gzip. The size difference
+in compressed output is negligible.
+
+I<Solution 2>: You can replace the function used for creating class names to
+include only one region name of the C<def:*> scheme.
+
+	*Syntax::Highlight::Universal::_createClassName = sub {
+		$region = shift;
+
+		while (defined $region && $region->name !~ /^def:/)
+		{
+			$region = $region->parent;
+		}
+		my $class = defined $region ? $region->name : 'unknown';
+		$class =~ s/\W/_/g;
+		return $class;
+	};
+
+Note: this approach is not recommended and might stop working in future
+versions of the module.
+
+=head2 Text processing is very slow
+
+Colorer was originally meant for desktop applications where one second to
+load the configuration files doesn't matter. Unfortunately it matters a lot
+for web applications. Furthermore, the parsing of text itself also needs
+some time though much less than processing HRC configuration.
+
+I<Solution 1>: If you often have to highlight the same texts, you
+can use caching. L<Set up caching directory|/Setting a cache directory> where
+the module can store processed text. Next time the same text needs to be
+highlighted the result will be taken from the cache instead of parsing the
+text all over again (and loading the necessary configuration files in the
+process).
+
+I<Solution 2>: This module implements a mechanism to store an already parsed
+Colorer configuration on disk and load it into memory again. The time
+requirement is 5-10 times less than for loading HRC configurations. See
+description of methods L<precompile|/Precompiling configuration files> and
+L<setPrecompiledConfig|/Loading a precompiled configuration> for more
+information on this feature. When installing the module C<make test> will
+automatically create a precompiled configuration file C<precompiled.hrcc>
+(about 2 MB) that can be copied into the module's library directory (that's
+where the C<hrc> directory is put when installing the module).
 
 =head1 SEE ALSO
 
@@ -686,5 +797,7 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.1 or,
 at your option, any later version of Perl 5 you may have available.
 
+Colorer is (C) by Igor Russkih. For information on the license see
+http://colorer.sf.net/Z<>.
 
 =cut

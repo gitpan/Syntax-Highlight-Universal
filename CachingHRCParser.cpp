@@ -185,6 +185,7 @@ void CachingHRCParser::serialize(const Region *value)
 	serializePrimitive((Region*)NULL);
 
 	serialize(value->getName());
+	serialize(value->getDescription());
 	serializeQueued((Region*)value->getParent());
 }
 
@@ -199,13 +200,17 @@ void CachingHRCParser::deserialize(int &pos, Region* &value)
 	String* regionName;
 	deserialize(pos, regionName);
 
-	FriendlyRegion* v = new FriendlyRegion(regionName, null, null, regionNamesVector.size());
+	String* regionDescr;
+	deserialize(pos, regionDescr);
+
+	FriendlyRegion* v = new FriendlyRegion(regionName, regionDescr, null, regionNamesVector.size());
 
 	value = v;
 	*(Region**)(buf + origPos) = value;
 	regionNamesVector.addElement(value);
 	regionNamesHash.put(regionName, value);
 	delete regionName;
+	delete regionDescr;
 
 	Region* parent;
 	deserializePointer(pos, parent);

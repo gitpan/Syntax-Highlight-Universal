@@ -1,5 +1,11 @@
 Revision history for Perl extension Syntax::Highlight::Universal.
 
+0.35  13 March 2005
+	* Made precompiled configuration include region descriptions
+	* Made a proper representation for Colorer's regions and schemes
+	  as Perl objects
+	* Fixed: illegal characters in class names
+
 0.31  13 March 2005
 	* Changed file format to conform CPAN distribution rules
 

@@ -16,6 +16,15 @@
 #include <colorer/parsers/HRCParserImpl.h>
 #include <colorer/parsers/TextParserImpl.h>
 
+#define PKG(type)		"Syntax::Highlight::Universal::" #type
+#define XPUSHobj(o, type)	\
+	{\
+		SV* sv = sv_newmortal();\
+		if (o)\
+			sv_setref_iv(sv, PKG(type), (IV)(o));\
+		XPUSHs(sv);\
+	}
+
 enum
 {
 	cbAddRegion,
@@ -67,7 +76,8 @@ public:
 		XPUSHs(sv_2mortal(newSViv(lineNum)));
 		XPUSHs(sv_2mortal(newSViv(sx)));
 		XPUSHs(sv_2mortal(newSViv(ex)));
-		XPUSHs(getRegionsList(region));
+		XPUSHobj(region, Region);
+
 		PUTBACK;
 		call_sv(callback[cbAddRegion], G_DISCARD);
 
@@ -90,8 +100,8 @@ public:
 		XPUSHs(sv_2mortal(newSViv(lineNum)));
 		XPUSHs(sv_2mortal(newSViv(sx)));
 		XPUSHs(sv_2mortal(newSViv(ex)));
-		XPUSHs(sv_2mortal(newSVpv((char*)scheme->getName()->getChars(), 0)));
-		XPUSHs(getRegionsList(region));
+		XPUSHobj(scheme, Scheme);
+		XPUSHobj(region, Region);
 		PUTBACK;
 		call_sv(callback[cbEnterScheme], G_DISCARD);
 
@@ -114,24 +124,13 @@ public:
 		XPUSHs(sv_2mortal(newSViv(lineNum)));
 		XPUSHs(sv_2mortal(newSViv(sx)));
 		XPUSHs(sv_2mortal(newSViv(ex)));
-		XPUSHs(sv_2mortal(newSVpv((char*)scheme->getName()->getChars(), 0)));
-		XPUSHs(getRegionsList(region));
+		XPUSHobj(scheme, Scheme);
+		XPUSHobj(region, Region);
 		PUTBACK;
 		call_sv(callback[cbLeaveScheme], G_DISCARD);
 
 		FREETMPS;
 		LEAVE;
-	}
-private:
-	SV* getRegionsList(const Region* region)
-	{
-		AV* regions = newAV();
-		while (region)
-		{
-			av_push(regions, sv_2mortal(newSVpv((char*)region->getName()->getChars(), 0)));
-			region = region->getParent();
-		}
-		return sv_2mortal(newRV_inc((SV*)regions));
 	}
 };
 
@@ -209,3 +208,50 @@ _deserialize(file)
 	char* file;
 CODE:
 	hrcParser.deserializeFromFile(file);
+
+MODULE = Syntax::Highlight::Universal	PACKAGE = Syntax::Highlight::Universal::Region
+
+const char*
+name(r)
+	Region* r;
+CODE:
+	const String* name = r->getName();
+	RETVAL = name ? name->getChars() : null;
+OUTPUT:
+	RETVAL
+
+const char*
+description(r)
+	Region* r;
+CODE:
+	const String* descr = r->getDescription();
+	RETVAL = descr ? descr->getChars() : null;
+OUTPUT:
+	RETVAL
+
+Region*
+parent(r)
+	Region* r;
+CODE:
+	RETVAL = (Region*)r->getParent();
+OUTPUT:
+	RETVAL
+
+IV
+id(r)
+	Region* r;
+CODE:
+	RETVAL = r->getID();
+OUTPUT:
+	RETVAL
+
+MODULE = Syntax::Highlight::Universal	PACKAGE = Syntax::Highlight::Universal::Scheme
+
+const char*
+name(s)
+	Scheme* s;
+CODE:
+	const String* name = s->getName();
+	RETVAL = name ? name->getChars() : null;
+OUTPUT:
+	RETVAL

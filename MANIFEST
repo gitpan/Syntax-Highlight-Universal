@@ -256,8 +256,9 @@ lib/Syntax/Highlight/Universal/hrc/xml/xmlschema.hrc
 lib/Syntax/Highlight/Universal/hrc/xml/xslt.hrc
 Makefile.PL
 MANIFEST			This list of files
+META.yml			Module meta-data (added by MakeMaker)
 README
 test.pl
+typemap
 Universal.pm
 Universal.xs
-META.yml                                 Module meta-data (added by MakeMaker)
