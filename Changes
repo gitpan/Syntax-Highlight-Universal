@@ -1,5 +1,8 @@
 Revision history for Perl extension Syntax::Highlight::Universal.
 
+0.5   5 June 2009
+  * Fixed long standing compilation issues
+
 0.4   13 Match 2005
   * Removed MemoryChunks.cpp from the distribution, it wasn't
     working correctly
